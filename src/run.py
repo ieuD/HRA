@@ -95,7 +95,7 @@ def runIoThroughNupic(inputData , model ):
 
     counter = 0
 
-    with open("./output.csv" , "w") as file:
+    with open("../data/output.csv" , "w") as file:
         for row in csvReader:
             counter +=1
 
