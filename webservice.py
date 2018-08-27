@@ -1,9 +1,10 @@
+from flask import Flask
+from flask import request
+import json
 import importlib
 import sys
 import csv
-import datetime
 import os
-
 
 from nupic.data.inference_shifter import InferenceShifter
 from nupic.frameworks.opf.model_factory import ModelFactory
@@ -79,44 +80,54 @@ MODEL_PARAMS = {'aggregationInfo': {'days': 0,
  'predictAheadTime': None,
 'version': 1}
 
+app = Flask(__name__)
+
+@app.route("/" , methods = ['POST'])
 
 
-def createModel(modelParams= MODEL_PARAMS):
-    model = ModelFactory.create(modelParams)
-    model.enableInference({"predictedField" : "heartrate"})
-    return model
+def getData():
 
+    ContentType =request.headers.get('Content-Type')
+    if 'application/json' or 'application/xml' not in ContentType:
 
-def runIoThroughNupic(inputData , model ):
-    inputFile = open("../data/heart-rate.csv" , "rb")
-    csvReader = csv.reader(inputFile)
-    csvReader.next()
+        splitted   =(request.data).split("\r\n")
+        model = ModelFactory.create(MODEL_PARAMS)
+        model.enableInference({"predictedField" : "heartrate"})
+        print"model olustu"
+        for i in splitted:
 
-    counter = 0
-
-    with open("../data/output.csv" , "w") as file:
-        for row in csvReader:
-            counter +=1
-
-            if(counter %100 ==0):
-                print "%i lines..." %counter
-
-
-                rate = float(row[1])
-                timestamp = str(row[0])
-
-                result = model.run({
-                "timestamp" : timestamp,
-                "heartrate" : rate
-                })
-
-
-                prediction = result.inferences["multiStepBestPredictions"][1]
-                anomalyScore = result.inferences["anomalyScore"]
-
-                file.write(timestamp + "-->"+ str(prediction) + "-->" + str(anomalyScore) + "\n")
+            splitted = i.strip().split(",")
+            timestamp = str(splitted[0])
+            rate = float(splitted[1])
 
 
 
-if __name__ == "__main__":
-    runIoThroughNupic(inputData="../data/heart-rate.csv", model = createModel(modelParams= MODEL_PARAMS))
+
+
+
+            result = model.run({
+            "timestamp" : timestamp,
+            "heartrate" : rate
+            })
+            result1 = {'prediction': result.inferences["multiStepBestPredictions"][1] , 'anomalyScore' : result.inferences["anomalyScore"]}
+            print result1
+
+
+    else:
+        print "Not Supported Type"
+
+
+
+
+
+
+
+    ##print timestamp + "-->"+ str(prediction) + "-->" + str(anomalyScore) + "\n"
+
+
+    return json.dumps({"status" : True})
+
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+    print('asd')
