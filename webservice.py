@@ -5,6 +5,7 @@ import importlib
 import sys
 import csv
 import os
+import pandas
 
 from nupic.data.inference_shifter import InferenceShifter
 from nupic.frameworks.opf.model_factory import ModelFactory
@@ -85,18 +86,26 @@ app = Flask(__name__)
 @app.route("/" , methods = ['POST'])
 
 
-def getData():
+def getData():   
 
-    ContentType =request.headers.get('Content-Type')
-    if 'application/json' or 'application/xml' not in ContentType:
+    model = ModelFactory.create(MODEL_PARAMS)
+    model.enableInference({"predictedField" : "heartrate"})
+
+    contentType = request.headers.get('Content-Type')
+
+    if 'application/json' or 'application/xml' not in contentType:
+       
 
         splitted   =(request.data).split("\r\n")
-        model = ModelFactory.create(MODEL_PARAMS)
-        model.enableInference({"predictedField" : "heartrate"})
         print"model olustu"
-        for i in splitted:
+        print "***********************************************"        
+        
+        for i in splitted:           
 
             splitted = i.strip().split(",")
+            print i
+            print splitted
+            
             timestamp = str(splitted[0])
             rate = float(splitted[1])
 
